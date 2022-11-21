@@ -1,6 +1,8 @@
 # RecorderManager
 
 
+implementation "io.github.muxiaolin:RecorderManager:0.3.2"
+
 修改
 
 
