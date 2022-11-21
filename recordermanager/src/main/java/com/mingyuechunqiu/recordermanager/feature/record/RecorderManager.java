@@ -1,8 +1,13 @@
 package com.mingyuechunqiu.recordermanager.feature.record;
 
+import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.CameraType.CAMERA_BACK;
+import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.CameraType.CAMERA_FRONT;
+import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.CameraType.CAMERA_NOT_SET;
+
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
@@ -12,15 +17,11 @@ import androidx.core.util.Pair;
 
 import com.mingyuechunqiu.recordermanager.data.bean.RecorderOption;
 import com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants;
-import com.mingyuechunqiu.recordermanager.feature.interpect.RecorderManagerIntercept;
 import com.mingyuechunqiu.recordermanager.feature.interpect.IRecorderManagerInterceptor;
+import com.mingyuechunqiu.recordermanager.feature.interpect.RecorderManagerIntercept;
 import com.mingyuechunqiu.recordermanager.util.CameraParamsUtils;
 
 import java.io.IOException;
-
-import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.CameraType.CAMERA_BACK;
-import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.CameraType.CAMERA_FRONT;
-import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.CameraType.CAMERA_NOT_SET;
 
 /**
  * <pre>
@@ -177,16 +178,13 @@ class RecorderManager implements IRecorderManager {
         for (int i = 0; i < numberOfCameras; i++) {
             Camera.getCameraInfo(i, cameraInfo);
             //如果是指定前置摄像头，翻转至前置，否则全部指定为后置摄像头
-            if (cameraType == CAMERA_FRONT &&
-                    cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            if (cameraType == CAMERA_FRONT && cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
                 releaseCamera();
                 mCamera = Camera.open(i);
                 mCameraType = CAMERA_FRONT;
                 initCameraParameters(holder, i);
                 return mCamera;
-            } else if ((cameraType == CAMERA_NOT_SET ||
-                    cameraType == CAMERA_BACK) &&
-                    cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+            } else if ((cameraType == CAMERA_NOT_SET || cameraType == CAMERA_BACK) && cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
                 releaseCamera();
                 mCamera = Camera.open(i);
                 mCameraType = CAMERA_BACK;
@@ -294,8 +292,7 @@ class RecorderManager implements IRecorderManager {
         可能手机自带的摄像应用支持zoom变焦，只是我们自己的应用就不行了*/
         boolean isCanAutoFocus = false;
         if ((mCameraType == CAMERA_FRONT && parameters.isSmoothZoomSupported()) ||
-                (mCameraType == CAMERA_BACK &&
-                        (parameters.isSmoothZoomSupported() || parameters.isZoomSupported()))) {
+                (mCameraType == CAMERA_BACK && (parameters.isSmoothZoomSupported() || parameters.isZoomSupported()))) {
             isCanAutoFocus = true;
         }
         if (isCanAutoFocus) {
@@ -313,20 +310,30 @@ class RecorderManager implements IRecorderManager {
                 videoRatio = profile.videoFrameWidth * 1.0f / profile.videoFrameHeight;
             }
         }
-        //设置使用机器本身所支持的宽高
-        if (mIntercept == null || !mIntercept.interceptSettingPreviewSize(parameters.getSupportedPreviewSizes())) {
-            Pair<Integer, Integer> mPreviewSize = CameraParamsUtils.getInstance().getSupportSize(
-                    parameters.getSupportedPreviewSizes(), videoRatio);
-            if (mPreviewSize != null && mPreviewSize.first != null && mPreviewSize.second != null) {
-                parameters.setPreviewSize(mPreviewSize.first, mPreviewSize.second);
-            }
+//        Log.d("CameraParameters", "videoRatio:" + videoRatio);
+        //设置使用机器本身所支持的宽高,获取摄像头支持的PreviewSize列表
+        Pair<Integer, Integer> mPreviewSize = null;
+        if (mIntercept != null) {
+            mPreviewSize = mIntercept.interceptSettingPreviewSize(parameters.getSupportedPreviewSizes());
         }
-        if (mIntercept == null || !mIntercept.interceptSettingPictureSize(parameters.getSupportedPictureSizes())) {
-            Pair<Integer, Integer> mPictureSize = CameraParamsUtils.getInstance().getSupportSize(
-                    parameters.getSupportedPictureSizes(), 0, 0);
-            if (mPictureSize != null && mPictureSize.first != null && mPictureSize.second != null) {
-                parameters.setPictureSize(mPictureSize.first, mPictureSize.second);
-            }
+        if (mPreviewSize == null) {
+            mPreviewSize = CameraParamsUtils.getInstance().getSupportSize(parameters.getSupportedPreviewSizes(), videoRatio);
+            Log.d("CameraParameters", "Use Default Setting PreviewSize:" + mPreviewSize);
+        }
+        if (mPreviewSize != null && mPreviewSize.first != null && mPreviewSize.second != null) {
+            parameters.setPreviewSize(mPreviewSize.first, mPreviewSize.second);
+        }
+        // 获取摄像头支持的pictureSize列表
+        Pair<Integer, Integer> mPictureSize = null;
+        if (mIntercept != null) {
+            mPictureSize = mIntercept.interceptSettingPictureSize(parameters.getSupportedPictureSizes());
+        }
+        if (mPictureSize == null) {
+            mPictureSize = CameraParamsUtils.getInstance().getSupportSize(parameters.getSupportedPictureSizes(), 0, 0);
+            Log.d("CameraParameters", "Use Default Setting PictureSize:" + mPictureSize);
+        }
+        if (mPictureSize != null && mPictureSize.first != null && mPictureSize.second != null) {
+            parameters.setPictureSize(mPictureSize.first, mPictureSize.second);
         }
         mCamera.setParameters(parameters);
         int degrees = 90;//默认竖屏旋转
@@ -335,6 +342,7 @@ class RecorderManager implements IRecorderManager {
         }
         mCamera.setDisplayOrientation(degrees);
         try {
+//            holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
             mCamera.unlock();

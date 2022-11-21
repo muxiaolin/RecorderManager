@@ -1,7 +1,7 @@
 # RecorderManager
 
 
-
+修改
 
 
 因为在项目中经常需要使用音视频录制，所以写了一个公共库RecorderManager，欢迎大家使用。

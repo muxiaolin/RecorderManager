@@ -11,6 +11,7 @@
             android:name=".feature.main.container.RecordVideoActivity"
             android:configChanges="screenSize|orientation|keyboardHidden"
             android:screenOrientation="portrait"
+            android:exported="false"
             android:theme="@style/FullScreenTheme" />
     </application>
 

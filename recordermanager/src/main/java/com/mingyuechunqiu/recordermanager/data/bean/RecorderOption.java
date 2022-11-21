@@ -198,7 +198,6 @@ public class RecorderOption implements Parcelable {
      * 链式调用
      */
     public static class Builder {
-
         private int audioSource;//音频源
         private int videoSource;//视频源
         private int outputFormat;//输出格式

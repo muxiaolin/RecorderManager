@@ -1,11 +1,19 @@
 package com.mingyuechunqiu.recordermanager.util;
 
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Point;
 import android.hardware.Camera;
+import android.util.Log;
+import android.view.Surface;
+
 import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -37,6 +45,32 @@ public class CameraParamsUtils {
 
     private CameraParamsUtils() {
         mSizeComparator = new SizeComparator();
+    }
+
+    /**
+     * 找出最大像素组合
+     *
+     * @param cameraSizes
+     * @return
+     */
+    public static Camera.Size findMaxCameraSize(List<Camera.Size> cameraSizes) {
+        // 按照分辨率从大到小排序
+        List<Camera.Size> supportedResolutions = new ArrayList<>(cameraSizes);
+        Collections.sort(supportedResolutions, new Comparator<Camera.Size>() {
+            @Override
+            public int compare(Camera.Size a, Camera.Size b) {
+                int aPixels = a.height * a.width;
+                int bPixels = b.height * b.width;
+                if (bPixels < aPixels) {
+                    return -1;
+                }
+                if (bPixels > aPixels) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+        return supportedResolutions.get(0);
     }
 
     /**
@@ -91,6 +125,136 @@ public class CameraParamsUtils {
             }
         }
         return null;
+    }
+
+    /**
+     * 找出最适合的分辨率
+     *
+     * @param cameraSizes
+     * @param screenResolution 屏幕分辨率
+     * @param isPictureSize
+     * @param maxDistortion
+     * @return
+     */
+    public Point findBestResolution(List<Camera.Size> cameraSizes, Point screenResolution, boolean isPictureSize, float maxDistortion) {
+        //默认分辩率
+        Point defaultResolution;
+        if (isPictureSize) {
+            defaultResolution = new Point(2000, 1500);
+        } else {
+            defaultResolution = new Point(1920, 1080);
+        }
+        if (cameraSizes == null) {
+            return defaultResolution;
+        }
+        // 按照分辨率从大到小排序
+        List<Camera.Size> supportedResolutions = new ArrayList<>(cameraSizes);
+        Collections.sort(supportedResolutions, new Comparator<Camera.Size>() {
+            @Override
+            public int compare(Camera.Size a, Camera.Size b) {
+                int aPixels = a.height * a.width;
+                int bPixels = b.height * b.width;
+                if (bPixels < aPixels) {
+                    return -1;
+                }
+                if (bPixels > aPixels) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+
+        if (supportedResolutions.size() > 0) {
+            defaultResolution.x = supportedResolutions.get(0).width;
+            defaultResolution.y = supportedResolutions.get(0).height;
+        }
+
+        // 移除不符合条件的分辨率
+        double screenAspectRatio = (double) screenResolution.x / (double) screenResolution.y;
+//        Log.d("CameraParameters", "screenAspectRatio=" + screenAspectRatio);
+        Iterator<Camera.Size> it = supportedResolutions.iterator();
+        while (it.hasNext()) {
+            Camera.Size supportedResolution = it.next();
+            int width = supportedResolution.width;
+            int height = supportedResolution.height;
+            // 移除低于下限的分辨率，尽可能取高分辨率
+            if (isPictureSize) {
+                if (width * height < 2000 * 1500) {
+                    it.remove();
+                    continue;
+                }
+            } else {
+                if (width * height < 1280 * 720) {
+                    it.remove();
+                    continue;
+                }
+            }
+
+            /**
+             * 在camera分辨率与屏幕分辨率宽高比不相等的情况下，找出差距最小的一组分辨率
+             * 由于camera的分辨率是width>height，我们设置的portrait模式中，width<height
+             * 因此这里要先交换然preview宽高比后在比较
+             */
+            boolean isCandidatePortrait = width > height;
+            int maybeFlippedWidth = isCandidatePortrait ? height : width;
+            int maybeFlippedHeight = isCandidatePortrait ? width : height;
+            double aspectRatio = (double) maybeFlippedWidth / (double) maybeFlippedHeight;
+            double distortion = Math.abs(aspectRatio - screenAspectRatio);
+//            Log.d("CameraParameters", "aspectRatio=" + aspectRatio + ", distortion=" + distortion);
+            if (distortion > maxDistortion) {
+                it.remove();
+                continue;
+            }
+            // 找到与屏幕分辨率完全匹配的预览界面分辨率直接返回
+            if (maybeFlippedWidth == screenResolution.x && maybeFlippedHeight == screenResolution.y) {
+                Point exactPoint = new Point(width, height);
+                return exactPoint;
+            }
+        }
+
+        // 如果没有找到合适的，并且还有候选的像素，则设置其中最大尺寸的，对于配置比较低的机器不太合适
+        if (!supportedResolutions.isEmpty()) {
+            Camera.Size largestPreview = supportedResolutions.get(0);
+            Point largestSize = new Point(largestPreview.width, largestPreview.height);
+            return largestSize;
+        }
+        // 没有找到合适的，就返回默认的
+        return defaultResolution;
+    }
+
+    /**
+     * 设置相机显示方向
+     *
+     * @param rotation 屏幕方向
+     * @param cameraId
+     * @return
+     */
+    public int getCameraDisplayOrientation(int rotation, int cameraId) {
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        Camera.getCameraInfo(cameraId, info);
+        int degree = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degree = 0;
+                break;
+            case Surface.ROTATION_90:
+                degree = 90;
+                break;
+            case Surface.ROTATION_180:
+                degree = 180;
+                break;
+            case Surface.ROTATION_270:
+                degree = 270;
+                break;
+        }
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degree) % 360;
+            result = (360 - result) % 360;
+        } else {
+            result = (info.orientation - degree + 360) % 360;
+        }
+        return result;
     }
 
     public void release() {

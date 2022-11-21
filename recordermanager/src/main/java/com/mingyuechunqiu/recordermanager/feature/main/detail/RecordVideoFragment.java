@@ -332,7 +332,7 @@ public class RecordVideoFragment extends BasePresenterFragment<RecordVideoContra
     }
 
     @Override
-    public void onClickCancel(@org.jetbrains.annotations.Nullable String filePath, int videoDuration) {
+    public void onClickCancel(@Nullable String filePath, int videoDuration) {
         FragmentActivity activity = getActivity();
         if (activity instanceof RMRecordVideoCallback) {
             ((RMRecordVideoCallback) activity).onClickCancel(filePath, videoDuration);

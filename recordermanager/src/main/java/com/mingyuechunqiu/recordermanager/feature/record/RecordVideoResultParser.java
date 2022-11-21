@@ -1,13 +1,13 @@
 package com.mingyuechunqiu.recordermanager.feature.record;
 
+import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.EXTRA_RECORD_VIDEO_RESULT_INFO;
+
 import android.content.Intent;
 
 import androidx.annotation.Nullable;
 
 import com.mingyuechunqiu.recordermanager.data.bean.RecordVideoResultInfo;
 import com.mingyuechunqiu.recordermanager.framework.parser.IRecordVideoResultParser;
-
-import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.EXTRA_RECORD_VIDEO_RESULT_INFO;
 
 /**
  * <pre>

@@ -42,8 +42,7 @@ public class RecorderHelper implements IRecorderHelper {
             mRecorder = null;
         } catch (RuntimeException stopException) {
             //录制时间过短stop，会有崩溃异常，所以进行捕获
-            Log.d("RecorderHelper", stopException.getMessage() == null
-                    ? "释放MediaRecorder异常" : stopException.getMessage());
+            Log.d("RecorderHelper", stopException.getMessage() == null ? "释放MediaRecorder异常" : stopException.getMessage());
         }
     }
 

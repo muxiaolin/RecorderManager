@@ -7,6 +7,7 @@ import android.view.SurfaceHolder;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
 
 import com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants;
 import com.mingyuechunqiu.recordermanager.data.bean.RecorderOption;
@@ -110,13 +111,13 @@ public class RecorderManagerIntercept implements IRecorderManagerInterceptor {
     }
 
     @Override
-    public boolean interceptSettingPreviewSize(List<Camera.Size> list) {
-        return false;
+    public Pair<Integer, Integer> interceptSettingPreviewSize(List<Camera.Size> list) {
+        return null;
     }
 
     @Override
-    public boolean interceptSettingPictureSize(List<Camera.Size> list) {
-        return false;
+    public  Pair<Integer, Integer> interceptSettingPictureSize(List<Camera.Size> list) {
+        return null;
     }
 
     @Override

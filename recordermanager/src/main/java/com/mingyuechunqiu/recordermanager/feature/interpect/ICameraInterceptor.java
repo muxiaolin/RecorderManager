@@ -2,6 +2,8 @@ package com.mingyuechunqiu.recordermanager.feature.interpect;
 
 import android.hardware.Camera;
 
+import androidx.core.util.Pair;
+
 import java.util.List;
 
 /**
@@ -22,7 +24,7 @@ public interface ICameraInterceptor {
      * @param list 本机支持的相机预览大小集合
      * @return 拦截不设置返回true，否则返回false
      */
-    boolean interceptSettingPreviewSize(List<Camera.Size> list);
+    Pair<Integer, Integer> interceptSettingPreviewSize(List<Camera.Size> list);
 
     /**
      * 拦截本机支持的相机图片大小参数设置
@@ -30,7 +32,7 @@ public interface ICameraInterceptor {
      * @param list 本机支持的相机图片大小集合
      * @return 拦截不设置返回true，否则返回false
      */
-    boolean interceptSettingPictureSize(List<Camera.Size> list);
+    Pair<Integer, Integer> interceptSettingPictureSize(List<Camera.Size> list);
 
     /**
      * 拦截相机预览方向

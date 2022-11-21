@@ -1,5 +1,7 @@
 package com.mingyuechunqiu.recordermanager.util;
 
+import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.SUFFIX_MP4;
+
 import android.content.Context;
 import android.os.Environment;
 
@@ -7,8 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.io.File;
-
-import static com.mingyuechunqiu.recordermanager.data.constants.RecorderManagerConstants.SUFFIX_MP4;
 
 /**
  * <pre>
